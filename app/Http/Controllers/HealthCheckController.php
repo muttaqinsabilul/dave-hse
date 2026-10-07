@@ -18,9 +18,11 @@ class HealthCheckController extends Controller
     public function create(Request $request, SessionAuth $auth): View
     {
         $site = $auth->effectiveSite();
+        $search = trim($request->string('q', '')->toString());
 
         $workers = Worker::query()
             ->when($site !== null, fn ($q) => $q->forSite($site))
+            ->when($search !== '', fn ($q) => $q->search($search))
             ->orderBy('id')
             ->get(['id', 'nama', 'site_code']);
 
@@ -50,6 +52,6 @@ class HealthCheckController extends Controller
             ]
         );
 
-        return redirect()->route('dashboard')->with('ok', "Tensi {$worker->nama} tersimpan: {$check->status}.");
+        return redirect()->route('dashboard')->with('ok', "Data pemeriksaan tensi & suhu {$worker->nama} berhasil disimpan.");
     }
 }

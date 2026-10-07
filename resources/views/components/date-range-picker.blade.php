@@ -608,9 +608,12 @@
             const tStart = tempStart ? new Date(tempStart.getFullYear(), tempStart.getMonth(), tempStart.getDate()).getTime() : null;
             const tEnd = tempEnd ? new Date(tempEnd.getFullYear(), tempEnd.getMonth(), tempEnd.getDate()).getTime() : null;
 
-            // Validasi: hanya muncul notifikasi toast di kanan atas SETELAH klik tombol Terapkan Filter
             if (tStart !== null && tEnd !== null && tEnd < tStart) {
-                showToast('Tanggal <strong>Dari</strong> tidak boleh lebih akhir dari tanggal <strong>Sampai</strong>!');
+                if (window.showToast) {
+                    window.showToast('Tanggal <strong>Dari</strong> tidak boleh lebih akhir dari tanggal <strong>Sampai</strong>!', 'error');
+                } else {
+                    showToast('Tanggal <strong>Dari</strong> tidak boleh lebih akhir dari tanggal <strong>Sampai</strong>!');
+                }
                 return;
             }
             startYMD = tempStart ? formatYMD(tempStart) : todayStr;

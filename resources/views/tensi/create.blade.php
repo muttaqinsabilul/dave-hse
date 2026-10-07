@@ -17,33 +17,90 @@
         <form method="POST" action="{{ route('tensi.store') }}" class="space-y-5">
             @csrf
 
-            <!-- Worker Selection -->
-            <div>
-                <label for="worker_id" class="block text-xs font-semibold uppercase tracking-wider text-slate-700">
-                    Pilih Pekerja <span class="text-rose-500">*</span>
-                </label>
+            @php
+                $selectedId = old('worker_id', $selected);
+                $selectedWorker = $selectedId ? $workers->firstWhere('id', $selectedId) : null;
+            @endphp
+
+            <!-- Worker Selection with Real-time Search -->
+            <div class="relative" id="worker_combobox_container">
+                <div class="flex items-center justify-between">
+                    <label for="worker_search_input" class="block text-xs font-semibold uppercase tracking-wider text-slate-700">
+                        Pilih Pekerja <span class="text-rose-500">*</span>
+                    </label>
+                    <span class="text-[11px] text-slate-400 font-medium">Ketik untuk mencari pekerja</span>
+                </div>
+
+                <!-- Hidden select for form submission -->
+                <select name="worker_id" id="worker_id" class="hidden" required>
+                    <option value="" disabled @selected(!$selectedWorker)>Pilih Pekerja...</option>
+                    @foreach($workers as $w)
+                        <option value="{{ $w->id }}" @selected(($selectedWorker?->id ?? '') === $w->id)>
+                            {{ $w->id }} — {{ $w->nama }} (Site {{ $w->site_code }})
+                        </option>
+                    @endforeach
+                </select>
+
+                <!-- Search Input Trigger -->
                 <div class="relative mt-1">
-                    <select name="worker_id" id="worker_id" class="w-full appearance-none rounded-xl border border-slate-300 bg-slate-50/50 py-2.5 pr-8 pl-3 text-xs font-semibold text-slate-800 transition-all focus:border-slate-900 focus:bg-white focus:outline-hidden">
-                        @foreach($workers as $w)
-                            <option value="{{ $w->id }}" @selected($selected === $w->id)>
-                                {{ $w->id }} — {{ $w->nama }} (Site {{ $w->site_code }} • {{ $w->jenis_pekerjaan }})
-                            </option>
-                        @endforeach
-                    </select>
-                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-slate-400">
-                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                    </div>
+                    <input 
+                        type="text" 
+                        id="worker_search_input" 
+                        autocomplete="off"
+                        placeholder="Pilih atau cari nama / ID pekerja..." 
+                        value="{{ $selectedWorker ? $selectedWorker->id . ' — ' . $selectedWorker->nama . ' (Site ' . $selectedWorker->site_code . ')' : '' }}"
+                        class="w-full rounded-xl border border-slate-300 bg-slate-50/50 py-2.5 pr-10 pl-9 text-xs font-normal text-slate-800 transition-all placeholder:text-slate-400 placeholder:font-normal focus:border-slate-900 focus:bg-white focus:outline-hidden"
+                    >
+                    <button 
+                        type="button" 
+                        id="worker_combobox_toggle"
+                        tabindex="-1"
+                        class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 focus:outline-hidden"
+                    >
+                        <svg id="worker_combobox_arrow" class="h-4 w-4 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Dropdown Menu List -->
+                <div 
+                    id="worker_dropdown_menu" 
+                    class="hidden absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg divide-y divide-slate-100 text-xs"
+                >
+                    @foreach($workers as $w)
+                        <div 
+                            class="worker-option flex cursor-pointer items-center justify-between px-3.5 py-2.5 transition-colors hover:bg-slate-50 active:bg-slate-100"
+                            data-id="{{ $w->id }}"
+                            data-nama="{{ strtolower($w->nama) }}"
+                            data-code="{{ strtolower($w->id) }}"
+                            data-site="{{ $w->site_code }}"
+                            data-display="{{ $w->id }} — {{ $w->nama }} (Site {{ $w->site_code }})"
+                        >
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <span class="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-bold text-slate-800 shrink-0">{{ $w->id }}</span>
+                                <span class="truncate font-bold text-slate-900">{{ $w->nama }}</span>
+                            </div>
+                            <span class="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600 shrink-0">Site {{ $w->site_code }}</span>
+                        </div>
+                    @endforeach
+                    <div id="worker_empty_state" class="hidden px-4 py-3 text-center text-xs text-slate-400 font-medium">
+                        Tidak ada pekerja ditemukan
                     </div>
                 </div>
             </div>
 
             <!-- Blood Pressure (Sistol / Diastol) -->
             <div>
-                <div class="flex items-center justify-between">
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700">
-                        Tekanan Darah (mmHg) <span class="text-rose-500">*</span>
-                    </label>
-                    <span class="text-[11px] text-slate-400 font-medium">Rentang normal: 90–120 / 60–80</span>
-                </div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700">
+                    Tekanan Darah (mmHg) <span class="text-rose-500">*</span>
+                </label>
 
                 <div class="mt-1.5 grid grid-cols-2 gap-3">
                     <div>
@@ -52,11 +109,12 @@
                                 type="number" 
                                 id="sistol_input"
                                 name="sistol" 
-                                value="{{ old('sistol', 120) }}" 
+                                value="{{ old('sistol') }}" 
                                 min="70" 
                                 max="220" 
-                                placeholder="120" 
-                                class="w-full rounded-xl border border-slate-300 bg-slate-50/50 py-2.5 pr-14 pl-3 text-sm font-bold text-slate-900 transition-all placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-hidden"
+                                placeholder="cth: 120" 
+                                required
+                                class="w-full rounded-xl border border-slate-300 bg-slate-50/50 py-2.5 pr-14 pl-3 text-sm font-normal text-slate-900 transition-all placeholder:text-slate-400 placeholder:font-normal focus:border-slate-900 focus:bg-white focus:outline-hidden"
                             >
                             <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-xs text-slate-400">
                                 Sistol
@@ -70,11 +128,12 @@
                                 type="number" 
                                 id="diastol_input"
                                 name="diastol" 
-                                value="{{ old('diastol', 80) }}" 
+                                value="{{ old('diastol') }}" 
                                 min="40" 
                                 max="130" 
-                                placeholder="80" 
-                                class="w-full rounded-xl border border-slate-300 bg-slate-50/50 py-2.5 pr-14 pl-3 text-sm font-bold text-slate-900 transition-all placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-hidden"
+                                placeholder="cth: 80" 
+                                required
+                                class="w-full rounded-xl border border-slate-300 bg-slate-50/50 py-2.5 pr-14 pl-3 text-sm font-normal text-slate-900 transition-all placeholder:text-slate-400 placeholder:font-normal focus:border-slate-900 focus:bg-white focus:outline-hidden"
                             >
                             <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-xs text-slate-400">
                                 Diastol
@@ -86,12 +145,9 @@
 
             <!-- Temperature -->
             <div>
-                <div class="flex items-center justify-between">
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700">
-                        Suhu Tubuh (°C) <span class="text-rose-500">*</span>
-                    </label>
-                    <span class="text-[11px] text-slate-400 font-medium">Rentang normal: 36.5°C – 37.5°C</span>
-                </div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700">
+                    Suhu Tubuh (°C) <span class="text-rose-500">*</span>
+                </label>
                 <div class="relative mt-1">
                     <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -103,32 +159,17 @@
                         step="0.1" 
                         id="suhu_input"
                         name="suhu" 
-                        value="{{ old('suhu', 36.8) }}" 
+                        value="{{ old('suhu') }}" 
                         min="34" 
                         max="42" 
-                        placeholder="36.8" 
-                        class="w-full rounded-xl border border-slate-300 bg-slate-50/50 py-2.5 pr-10 pl-9 text-sm font-bold text-slate-900 transition-all placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-hidden"
+                        placeholder="cth: 36.8" 
+                        required
+                        class="w-full rounded-xl border border-slate-300 bg-slate-50/50 py-2.5 pr-10 pl-9 text-sm font-normal text-slate-900 transition-all placeholder:text-slate-400 placeholder:font-normal focus:border-slate-900 focus:bg-white focus:outline-hidden"
                     >
                     <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-xs text-slate-400">
                         °C
                     </span>
                 </div>
-            </div>
-
-            <!-- Real-time Status Preview Indicator -->
-            <div id="status_preview_card" class="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 transition-all">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <span id="status_indicator_dot" class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
-                        <span class="text-xs font-semibold text-slate-700">Evaluasi Otomatis Sistem:</span>
-                    </div>
-                    <span id="status_badge_text" class="rounded-md bg-emerald-600 px-2 py-0.5 text-xs font-extrabold text-white">
-                        NORMAL
-                    </span>
-                </div>
-                <p id="status_description" class="mt-1 text-[11px] text-emerald-800">
-                    Kondisi fisiologis dalam batas toleransi standar K3. Tenaga kerja diizinkan menjalankan aktivitas lapangan.
-                </p>
             </div>
 
             <!-- Submit Button -->
@@ -145,41 +186,106 @@
 </div>
 
 <script>
-const sistolIn = document.getElementById('sistol_input');
-const diastolIn = document.getElementById('diastol_input');
-const suhuIn = document.getElementById('suhu_input');
-const prevCard = document.getElementById('status_preview_card');
-const dot = document.getElementById('status_indicator_dot');
-const badge = document.getElementById('status_badge_text');
-const desc = document.getElementById('status_description');
+// --- Searchable Worker Combobox ---
+const workerSearchIn = document.getElementById('worker_search_input');
+const workerSelect = document.getElementById('worker_id');
+const workerDropdown = document.getElementById('worker_dropdown_menu');
+const workerToggle = document.getElementById('worker_combobox_toggle');
+const workerArrow = document.getElementById('worker_combobox_arrow');
+const workerOptions = document.querySelectorAll('.worker-option');
+const workerEmpty = document.getElementById('worker_empty_state');
 
-function updateStatus() {
-    const s = parseFloat(sistolIn.value) || 0;
-    const d = parseFloat(diastolIn.value) || 0;
-    const t = parseFloat(suhuIn.value) || 0;
+function openDropdown() {
+    workerDropdown.classList.remove('hidden');
+    workerArrow.classList.add('rotate-180');
+}
 
-    const normal = (s >= 90 && s <= 120) && (d >= 60 && d <= 80) && (t >= 36.5 && t <= 37.5);
+function closeDropdown() {
+    workerDropdown.classList.add('hidden');
+    workerArrow.classList.remove('rotate-180');
+}
 
-    if (normal) {
-        prevCard.className = 'rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 transition-all';
-        dot.className = 'h-2.5 w-2.5 rounded-full bg-emerald-500';
-        badge.className = 'rounded-md bg-emerald-600 px-2 py-0.5 text-xs font-extrabold text-white';
-        badge.textContent = 'NORMAL';
-        desc.className = 'mt-1 text-[11px] text-emerald-800';
-        desc.textContent = 'Kondisi fisiologis dalam batas toleransi standar K3. Tenaga kerja diizinkan menjalankan aktivitas lapangan.';
+function selectWorker(id, display) {
+    workerSelect.value = id;
+    workerSearchIn.value = display;
+    closeDropdown();
+}
+
+function filterWorkers(q) {
+    q = q.trim().toLowerCase();
+    let visibleCount = 0;
+    workerOptions.forEach(opt => {
+        const id = opt.getAttribute('data-code');
+        const nama = opt.getAttribute('data-nama');
+        const site = opt.getAttribute('data-site');
+        const match = !q || id.includes(q) || nama.includes(q) || site.includes(q);
+        if (match) {
+            opt.classList.remove('hidden');
+            visibleCount++;
+        } else {
+            opt.classList.add('hidden');
+        }
+    });
+    if (visibleCount === 0) {
+        workerEmpty.classList.remove('hidden');
     } else {
-        prevCard.className = 'rounded-xl border border-rose-200 bg-rose-50/70 p-3.5 transition-all';
-        dot.className = 'h-2.5 w-2.5 rounded-full bg-rose-500 animate-pulse';
-        badge.className = 'rounded-md bg-rose-600 px-2 py-0.5 text-xs font-extrabold text-white';
-        badge.textContent = 'FLAG (PERINGATAN)';
-        desc.className = 'mt-1 text-[11px] text-rose-800';
-        desc.textContent = 'Tensi atau suhu tubuh berada di luar ambang standar normal. Pekerja wajib diistirahatkan atau dirujuk evaluasi medis.';
+        workerEmpty.classList.add('hidden');
     }
 }
 
-sistolIn.addEventListener('input', updateStatus);
-diastolIn.addEventListener('input', updateStatus);
-suhuIn.addEventListener('input', updateStatus);
-updateStatus();
+workerSearchIn.addEventListener('focus', () => {
+    openDropdown();
+    filterWorkers(workerSearchIn.value);
+});
+
+workerSearchIn.addEventListener('input', (e) => {
+    openDropdown();
+    filterWorkers(e.target.value);
+});
+
+workerToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (workerDropdown.classList.contains('hidden')) {
+        openDropdown();
+        workerSearchIn.focus();
+    } else {
+        closeDropdown();
+    }
+});
+
+workerOptions.forEach(opt => {
+    opt.addEventListener('click', () => {
+        const id = opt.getAttribute('data-id');
+        const display = opt.getAttribute('data-display');
+        selectWorker(id, display);
+    });
+});
+
+document.addEventListener('click', (e) => {
+    const container = document.getElementById('worker_combobox_container');
+    if (container && !container.contains(e.target)) {
+        closeDropdown();
+        if (workerSelect.value) {
+            const currentOption = workerSelect.querySelector(`option[value="${workerSelect.value}"]`);
+            if (currentOption && (!workerSearchIn.value || !workerSearchIn.value.includes(workerSelect.value))) {
+                workerSearchIn.value = currentOption.textContent.trim();
+            }
+        } else {
+            workerSearchIn.value = '';
+        }
+    }
+});
+
+workerSearchIn.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        const firstVisible = Array.from(workerOptions).find(opt => !opt.classList.contains('hidden'));
+        if (firstVisible) {
+            selectWorker(firstVisible.getAttribute('data-id'), firstVisible.getAttribute('data-display'));
+        }
+    } else if (e.key === 'Escape') {
+        closeDropdown();
+    }
+});
 </script>
 @endsection

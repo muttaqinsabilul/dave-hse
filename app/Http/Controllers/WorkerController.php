@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreWorkerRequest;
 use App\Models\Site;
+use App\Models\Subcontractor;
 use App\Models\Worker;
 use App\Services\WorkerIdGenerator;
 use App\Support\SessionAuth;
@@ -20,9 +21,18 @@ class WorkerController extends Controller
 
         $site = $auth->effectiveSite($request->string('site', '')->toString() ?: null);
 
-        $workers = Worker::query()
+        $statusInput = strtoupper(trim($request->string('status', '')->toString()));
+        $status = in_array($statusInput, [Worker::STATUS_ONSITE, Worker::STATUS_OFFSITE], true) ? $statusInput : null;
+
+        $baseQuery = Worker::query()->when($site !== null, fn ($q) => $q->forSite($site));
+        $totalCount = (clone $baseQuery)->count();
+        $onsiteCount = (clone $baseQuery)->where('status_lokasi', Worker::STATUS_ONSITE)->count();
+        $offsiteCount = (clone $baseQuery)->where('status_lokasi', Worker::STATUS_OFFSITE)->count();
+
+        $workers = (clone $baseQuery)
             ->with(['site', 'healthChecks' => fn ($q) => $q->today()])
-            ->when($site !== null, fn ($q) => $q->forSite($site))
+            ->when($status === Worker::STATUS_ONSITE, fn ($q) => $q->onsite())
+            ->when($status === Worker::STATUS_OFFSITE, fn ($q) => $q->offsite())
             ->when($request->filled('q'), fn ($q) => $q->search(trim($request->string('q')->toString())))
             ->orderBy('id')
             ->paginate(15)
@@ -32,14 +42,26 @@ class WorkerController extends Controller
             'workers' => $workers,
             'sites' => Site::orderBy('code')->get(),
             'site' => $site,
+            'status' => $status,
+            'totalCount' => $totalCount,
+            'onsiteCount' => $onsiteCount,
+            'offsiteCount' => $offsiteCount,
+            'isAdmin' => $auth->hseUser()?->isAdmin() ?? false,
         ]);
     }
 
     public function create(): View
     {
+        $dbMandor = Subcontractor::all()->groupBy('site_code')->map(fn ($list) => $list->pluck('nama')->all())->toArray();
+        $configMandor = config('hse.mandor_per_site', []);
+        $mandorPerSite = [];
+        foreach (Site::all() as $s) {
+            $mandorPerSite[$s->code] = ! empty($dbMandor[$s->code]) ? $dbMandor[$s->code] : ($configMandor[$s->code] ?? []);
+        }
+
         return view('pekerja.create', [
             'sites' => Site::orderBy('code')->get(),
-            'mandorPerSite' => config('hse.mandor_per_site'),
+            'mandorPerSite' => $mandorPerSite,
         ]);
     }
 

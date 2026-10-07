@@ -77,8 +77,8 @@
             <div class="flex gap-4">
                 <!-- Photo with Holographic/Official Stamp -->
                 <div class="relative shrink-0">
-                    @if(\Illuminate\Support\Facades\Storage::disk('public')->exists($worker->foto_path))
-                        <img src="{{ \Illuminate\Support\Facades\Storage::url($worker->foto_path) }}" alt="Foto {{ $worker->nama }}" class="h-28 w-24 rounded-xl object-cover ring-2 ring-slate-200 shadow-2xs">
+                    @if($worker->foto_url)
+                        <img src="{{ $worker->foto_url }}" alt="Foto {{ $worker->nama }}" class="h-28 w-24 rounded-xl object-cover ring-2 ring-slate-200 shadow-2xs">
                     @else
                         <div class="flex h-28 w-24 flex-col items-center justify-center rounded-xl bg-gradient-to-br from-slate-800 to-slate-950 text-white shadow-2xs ring-2 ring-slate-200">
                             <span class="text-3xl font-black">{{ strtoupper(substr($worker->nama, 0, 1)) }}</span>

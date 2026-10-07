@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             RiskMatrixSeeder::class,
             SiteCounterSeeder::class,
             UserSeeder::class,
+            SubcontractorSeeder::class,
         ]);
 
         if (app()->isLocal()) {

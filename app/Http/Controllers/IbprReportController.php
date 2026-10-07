@@ -15,18 +15,18 @@ class IbprReportController extends Controller
 {
     public function index(Request $request, SessionAuth $auth): View
     {
+        $user = $auth->hseUser();
         $site = $auth->effectiveSite($request->string('site', '')->toString() ?: null);
         $from = $request->string('from', '')->toString();
         $to = $request->string('to', '')->toString();
         $search = trim($request->string('q', '')->toString());
-        $levelFilter = $request->string('level', '')->toString();
 
         $reports = IbprReport::query()
             ->with(['site', 'inspector'])
             ->when($site !== null, fn ($q) => $q->forSite($site))
+            ->when($user !== null && ! $user->isAdmin(), fn ($q) => $q->where('inspector_id', $user->id))
             ->when($from !== '', fn ($q) => $q->whereDate('tanggal_realtime', '>=', $from))
             ->when($to !== '', fn ($q) => $q->whereDate('tanggal_realtime', '<=', $to))
-            ->when($levelFilter !== '', fn ($q) => $q->where('level', $levelFilter))
             ->when($search !== '', fn ($q) => $q->where(fn ($sub) => $sub->where('kegiatan', 'like', "%{$search}%")->orWhere('bahaya', 'like', "%{$search}%")->orWhere('risiko', 'like', "%{$search}%")))
             ->latest('tanggal_realtime')
             ->paginate(15)
@@ -39,7 +39,6 @@ class IbprReportController extends Controller
             'from' => $from,
             'to' => $to,
             'search' => $search,
-            'levelFilter' => $levelFilter,
             'isAdmin' => $auth->hseUser()?->isAdmin() ?? false,
         ]);
     }

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Worker extends Model
 {
@@ -90,6 +91,23 @@ class Worker extends Model
 
     protected function lamaBekerjaHari(): Attribute
     {
-        return Attribute::get(fn (): int => $this->tanggal_regis->diffInDays(now()->startOfDay()));
+        return Attribute::get(function (): int {
+            if (! $this->tanggal_regis || $this->tanggal_regis->isFuture()) {
+                return 1;
+            }
+
+            return (int) $this->tanggal_regis->startOfDay()->diffInDays(now()->startOfDay()) + 1;
+        });
+    }
+
+    protected function fotoUrl(): Attribute
+    {
+        return Attribute::get(function (): ?string {
+            if (! empty($this->foto_path) && Storage::disk('public')->exists($this->foto_path)) {
+                return Storage::url($this->foto_path);
+            }
+
+            return null;
+        });
     }
 }

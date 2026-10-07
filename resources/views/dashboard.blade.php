@@ -101,9 +101,9 @@
                         </div>
                         <div class="mt-2 flex items-center gap-2">
                             @if($todayCheck)
-                                <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold {{ $todayCheck->status === 'NORMAL' ? 'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-400/30' : 'bg-rose-500/20 text-rose-300 ring-1 ring-rose-400/30' }}">
-                                    <span class="h-1.5 w-1.5 rounded-full {{ $todayCheck->status === 'NORMAL' ? 'bg-emerald-400' : 'bg-rose-400' }}"></span>
-                                    Tensi Hari Ini: {{ $todayCheck->sistol }}/{{ $todayCheck->diastol }} mmHg ({{ $todayCheck->suhu }}°C) — {{ $todayCheck->status }}
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-400/30">
+                                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                                    Vitals Hari Ini: {{ $todayCheck->sistol }}/{{ $todayCheck->diastol }} mmHg ({{ $todayCheck->suhu }}°C)
                                 </span>
                             @else
                                 <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-semibold text-amber-300 ring-1 ring-amber-400/30">
@@ -266,10 +266,8 @@
                             <th class="py-3 px-4">ID</th>
                             <th class="py-3 px-4">Nama Pekerja</th>
                             <th class="py-3 px-4">Lokasi</th>
-                            <th class="py-3 px-4">Jenis Pekerjaan</th>
                             <th class="py-3 px-4">Mandor</th>
                             <th class="py-3 px-4">Usia</th>
-                            <th class="py-3 px-4">Status Vitals</th>
                             <th class="py-3 px-4 text-right">Aksi</th>
                         </tr>
                     </thead>
@@ -281,10 +279,14 @@
                                     <span class="rounded-md bg-slate-100 px-1.5 py-0.5 text-slate-800">{{ $w->id }}</span>
                                 </td>
                                 <td class="py-3 px-4 font-semibold text-slate-900">
-                                    <div class="flex items-center gap-2">
-                                        <div class="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700">
-                                            {{ strtoupper(substr($w->nama, 0, 1)) }}
-                                        </div>
+                                    <div class="flex items-center gap-2.5">
+                                        @if($w->foto_url)
+                                            <img src="{{ $w->foto_url }}" alt="{{ $w->nama }}" class="h-7 w-7 rounded-full object-cover ring-1 ring-slate-200 shadow-2xs shrink-0">
+                                        @else
+                                            <div class="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700 shrink-0">
+                                                {{ strtoupper(substr($w->nama, 0, 1)) }}
+                                            </div>
+                                        @endif
                                         <span>{{ $w->nama }}</span>
                                     </div>
                                 </td>
@@ -301,21 +303,8 @@
                                         </span>
                                     @endif
                                 </td>
-                                <td class="py-3 px-4 text-slate-600">{{ $w->jenis_pekerjaan }}</td>
                                 <td class="py-3 px-4 text-slate-600">{{ $w->mandor_subkon }}</td>
                                 <td class="py-3 px-4 text-slate-600">{{ $w->usia }} thn</td>
-                                <td class="py-3 px-4">
-                                    @if($cek)
-                                        <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold {{ $cek->status === 'FLAG' ? 'bg-rose-50 text-rose-700 ring-1 ring-rose-600/20' : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20' }}">
-                                            <span class="h-1.5 w-1.5 rounded-full {{ $cek->status === 'FLAG' ? 'bg-rose-500' : 'bg-emerald-500' }}"></span>
-                                            {{ $cek->status }}
-                                        </span>
-                                    @else
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
-                                            Belum Cek
-                                        </span>
-                                    @endif
-                                </td>
                                 <td class="py-3 px-4 text-right">
                                     <a href="{{ route('pekerja.show', $w) }}" class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98]">
                                         <span>Detail</span>
@@ -325,7 +314,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="py-8 text-center text-slate-400">
+                                <td colspan="6" class="py-8 text-center text-slate-400">
                                     <div class="flex flex-col items-center justify-center gap-1">
                                         <svg class="h-8 w-8 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                             <circle cx="12" cy="12" r="10"/>

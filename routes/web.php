@@ -6,6 +6,7 @@ use App\Http\Controllers\IbprReportController;
 use App\Http\Controllers\IdCardController;
 use App\Http\Controllers\InspectorController;
 use App\Http\Controllers\SessionAuthController;
+use App\Http\Controllers\SubcontractorController;
 use App\Http\Controllers\WorkerController;
 use App\Support\SessionAuth;
 use Illuminate\Support\Facades\Route;
@@ -41,4 +42,9 @@ Route::middleware('auth.session')->group(function (): void {
     Route::get('/inspector', [InspectorController::class, 'index'])->name('inspector.index');
     Route::get('/inspector/baru', [InspectorController::class, 'create'])->name('inspector.create');
     Route::post('/inspector', [InspectorController::class, 'store'])->name('inspector.store');
+
+    Route::get('/subkon', [SubcontractorController::class, 'index'])->name('subkon.index');
+    Route::get('/subkon/baru', [SubcontractorController::class, 'create'])->name('subkon.create');
+    Route::post('/subkon', [SubcontractorController::class, 'store'])->name('subkon.store');
+    Route::delete('/subkon/{subcontractor}', [SubcontractorController::class, 'destroy'])->name('subkon.destroy');
 });

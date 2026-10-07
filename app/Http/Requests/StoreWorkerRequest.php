@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Subcontractor;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class StoreWorkerRequest extends FormRequest
@@ -22,7 +22,7 @@ class StoreWorkerRequest extends FormRequest
             'site_code' => ['required', 'size:2', 'exists:sites,code'],
             'nama' => ['required', 'string', 'max:100'],
             'jenis_pekerjaan' => ['required', 'string', 'max:100'],
-            'mandor_subkon' => ['required', 'string', Rule::in(collect(config('hse.mandor_per_site'))->flatten()->all())],
+            'mandor_subkon' => ['required', 'string', 'max:100'],
             'foto' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'usia' => ['required', 'integer', 'min:17', 'max:65'],
             'asal' => ['required', 'string', 'max:100'],
@@ -41,9 +41,14 @@ class StoreWorkerRequest extends FormRequest
                     return;
                 }
 
-                $allowed = config('hse.mandor_per_site.'.$this->string('site_code')->toString(), []);
+                $siteCode = $this->string('site_code')->toString();
+                $subkonInput = $this->string('mandor_subkon')->toString();
 
-                if (! in_array($this->string('mandor_subkon')->toString(), $allowed, true)) {
+                $dbAllowed = Subcontractor::where('site_code', $siteCode)->pluck('nama')->all();
+                $configAllowed = config('hse.mandor_per_site.'.$siteCode, []);
+                $allowed = array_unique(array_merge($dbAllowed, $configAllowed));
+
+                if (! in_array($subkonInput, $allowed, true)) {
                     $validator->errors()->add('mandor_subkon', 'Mandor/subkon tidak terdaftar di site ini.');
                 }
             },
